@@ -36,3 +36,6 @@ TAGS
 # Vagrant
 .vagrant
 ops/*.retry
+
+# cabal new-build generated
+.ghc.environment.*
