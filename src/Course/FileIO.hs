@@ -24,13 +24,15 @@ Useful Functions --
 Abstractions --
   Applicative, Monad:
 
-    <$>, <*>, >>=, =<<, pure
+    <$>, <*>, ,>>, >>=, =<<, pure
 
 Tuple Functions that could help --
 
   fst :: (a, b) -> a
   snd :: (a, b) -> b
   (,) :: a -> b -> (a, b)
+  uncurry :: (a -> b -> c) -> (a, b) -> c
+  curry :: ((a, b) -> c) -> a -> b -> c
 
 Problem --
   Given a single argument of a file name, read that file,
@@ -39,7 +41,7 @@ Problem --
 
 Consideration --
   Try to avoid repetition. Factor out any common expressions.
-  
+
 Example --
 Given file files.txt, containing:
   a.txt
@@ -61,7 +63,7 @@ To test this module, load ghci in the root of the project directory, and do
 Example output:
 
 $ ghci
-GHCi, version ... 
+GHCi, version ...
 Loading package...
 Loading ...
 [ 1 of 28] Compiling (etc...
@@ -79,56 +81,130 @@ the contents of c
 
 -}
 
--- Given the file name, and file contents, print them.
+-- $setup
+-- >>> :set -XOverloadedStrings
+--
+-- | Given the file name, and file contents, print them.
 -- Use @putStrLn@.
+--
+-- >>> printFile "/path/to/file" "file contents"
+-- ============ /path/to/file
+-- file contents
+--
 printFile ::
   FilePath
   -> Chars
   -> IO ()
-printFile =
-  error "todo: Course.FileIO#printFile"
+-- printFile fp cs =
+--     putStrLn ("============ " ++ fp) >>= (\_ ->
+--     putStrLn cs)
 
--- Given a list of (file name and file contents), print each.
+-- printFile fp cs = do
+--     putStrLn ("============ " ++ fp)
+--     putStrLn cs
+
+printFile fp cs =
+    putStrLn ("============ " ++ fp) >>
+    putStrLn cs
+
+-- | Given a list of (file name and file contents pair), print each.
 -- Use @printFile@.
+--
+-- >>> printFiles (("a","b") :. ("c","d") :. Nil)
+-- ============ a
+-- b
+-- ============ c
+-- d
+
 printFiles ::
   List (FilePath, Chars)
   -> IO ()
-printFiles =
-  error "todo: Course.FileIO#printFiles"
+-- using explicit recusion
+-- printFiles Nil       = return ()
+-- printFiles (l :. ls) = do
+--   uncurry printFile l
+--   printFiles ls
+--
+-- using foldRight
+printFiles = foldRight f (pure ())
+  where f :: (FilePath, Chars) -> IO () -> IO ()
+        f l = (>>) $ uncurry printFile l
 
--- Given a file name, return (file name and file contents).
+-- | Given a file name, return (file name and file contents).
 -- Use @readFile@.
+--
+-- >>> getFile "share/a.txt"
+-- ("share/a.txt","the contents of a\n")
+--
 getFile ::
   FilePath
   -> IO (FilePath, Chars)
-getFile =
-  error "todo: Course.FileIO#getFile"
+getFile fp = readFile fp >>= (\x -> return (fp, x))
 
--- Given a list of file names, return list of (file name and file contents).
+-- | Given a list of file names, return list of (file name and file contents).
 -- Use @getFile@.
+--
+-- >>> getFiles ("share/a.txt" :. "share/b.txt" :. Nil)
+-- [("share/a.txt","the contents of a\n"),("share/b.txt","the contents of b\n")]
+--
 getFiles ::
   List FilePath
   -> IO (List (FilePath, Chars))
-getFiles =
-  error "todo: Course.FileIO#getFiles"
 
--- Given a file name, read it and for each line in that file, read and print contents of each.
+-- using explicit recusion
+-- getFiles Nil       = pure Nil
+-- getFiles (f :. fs) = lift2 (:.) (getFile f) (getFiles fs)
+-- getFiles (f :. fs) = (:.) <$> getFile f <*> getFiles fs
+-- getFiles (f :. fs) = pure (:.) <*> getFile f <*> getFiles fs
+
+-- using foldRight
+-- getFiles = foldRight f (pure Nil)
+--   where f :: FilePath -> IO (List (FilePath, Chars)) -> IO (List (FilePath, Chars))
+--         -- f l = lift2 (:.) (getFile l)
+--         -- f l = (lift2 (:.) . getFile) $ l
+--         f = lift2 (:.) . getFile
+
+-- using high-order functions composition
+-- getFiles ls = sequence (getFile <$> ls)
+-- getFiles ls = sequence ((<$>) getFile ls)
+getFiles = sequence . (<$>) getFile
+
+-- | Given a file name, read it and for each line in that file, read and print contents of each.
 -- Use @getFiles@ and @printFiles@.
+--
+-- >>> run "share/files.txt"
+-- ============ share/a.txt
+-- the contents of a
+-- <BLANKLINE>
+-- ============ share/b.txt
+-- the contents of b
+-- <BLANKLINE>
+-- ============ share/c.txt
+-- the contents of c
+-- <BLANKLINE>
+--
 run ::
   FilePath
   -> IO ()
-run =
-  error "todo: Course.FileIO#run"
+run fp = words <$> readFile fp
+     >>= getFiles
+     >>= printFiles
 
+-- | To test this module, load ghci in the root of the project directory, and do
 -- /Tip:/ use @getArgs@ and @run@
+--
+-- >>> :main "share/files.txt"
+-- ============ share/a.txt
+-- the contents of a
+-- <BLANKLINE>
+-- ============ share/b.txt
+-- the contents of b
+-- <BLANKLINE>
+-- ============ share/c.txt
+-- the contents of c
+-- <BLANKLINE>
+--
+
 main ::
   IO ()
-main =
-  error "todo: Course.FileIO#main"
-
-----
-
--- Was there was some repetition in our solution?
--- ? `sequence . (<$>)`
--- ? `void . sequence . (<$>)`
--- Factor it out.
+main = flatten <$> getArgs >>= run
