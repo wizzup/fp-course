@@ -127,6 +127,10 @@ infixl 4 <**>
 join :: Monad f =>
   f (f a)
   -> f a
+-- join x = x >>= id
+--        = (>>=) x id
+--        = (>>=) x id
+--        = (=<<) id x
 join = (=<<) id
 
 -- | Implement a flipped version of @(=<<)@, however, use only
