@@ -257,7 +257,9 @@ seqOptional = foldRight f (Full Nil)
 --
 -- >>> find (const True) infinity
 -- Full 0
-find :: forall a. (a -> Bool) -> List a -> Optional a
+find :: forall a. (a -> Bool)
+     -> List a
+     -> Optional a
 find p = foldRight f Empty
   where f :: a -> Optional a -> Optional a
         f x ox | p x       = Full x
