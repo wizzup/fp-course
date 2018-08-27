@@ -67,6 +67,7 @@ foldLeft f b (h :. t) = let b' = f b h in b' `seq` foldLeft f b' t
 -- prop> \x -> x `headOr` infinity == 0
 --
 -- prop> \x -> x `headOr` Nil == x
+--
 headOr :: a -> List a -> a
 headOr x Nil      = x
 headOr _ (x :. _) = x
@@ -257,6 +258,7 @@ seqOptional = foldRight f (Full Nil)
 --
 -- >>> find (const True) infinity
 -- Full 0
+--
 find :: forall a. (a -> Bool)
      -> List a
      -> Optional a

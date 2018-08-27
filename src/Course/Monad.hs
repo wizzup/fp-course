@@ -53,6 +53,7 @@ instance Monad List where
 --
 -- >>> (\n -> Full (n + n)) =<< Full 7
 -- Full 14
+--
 instance Monad Optional where
   (=<<) ::
     (a -> Optional b)
@@ -64,6 +65,7 @@ instance Monad Optional where
 --
 -- >>> ((*) =<< (+10)) 7
 -- 119
+--
 instance Monad ((->) t) where
   (=<<) ::
     (a -> (t -> b))
@@ -103,6 +105,7 @@ instance Monad ((->) t) where
 --
 -- >>> ((*) <**> (+2)) 3
 -- 15
+--
 (<**>) :: Monad f =>
   f (a -> b)
   -> f a
@@ -124,6 +127,7 @@ infixl 4 <**>
 --
 -- >>> join (+) 7
 -- 14
+--
 join :: Monad f =>
   f (f a)
   -> f a
@@ -154,6 +158,7 @@ infixl 1 >>=
 --
 -- >>> ((\n -> n :. n :. Nil) <=< (\n -> n+1 :. n+2 :. Nil)) 1
 -- [2,2,3,3]
+--
 (<=<) :: Monad f =>
   (b -> f c)
   -> (a -> f b)
