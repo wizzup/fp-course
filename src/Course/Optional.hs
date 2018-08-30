@@ -89,11 +89,11 @@ bindOptional f (Full a) = f a
 --
 -- >>> optional (+1) 0 Empty
 -- 0
-optional ::
-  (a -> b)
-  -> b
-  -> Optional a
-  -> b
+--
+optional :: (a -> b)
+         -> b
+         -> Optional a
+         -> b
 optional _ b Empty    = b
 optional f _ (Full a) = f a
 
