@@ -128,14 +128,21 @@ infixl 4 <**>
 -- >>> join (+) 7
 -- 14
 --
-join :: Monad f =>
-  f (f a)
-  -> f a
+join :: Monad f
+     => f (f a)
+     -> f a
 -- join x = x >>= id
 --        = (>>=) x id
 --        = (>>=) x id
 --        = (=<<) id x
 join = (=<<) id
+
+-- NOTE: bind f m = join $ fmap f m
+-- bind :: Monad f
+--      => (a -> f b)
+--      -> f a
+--      -> f b
+-- bind f m = join $ f <$> m
 
 -- | Implement a flipped version of @(=<<)@, however, use only
 -- @join@ and @(<$>)@.
