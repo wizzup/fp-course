@@ -206,7 +206,7 @@ runList :: (Ord a, Functor f)
         -> f a                                                               -- ^ Optional a, List a
 runList mf sf ls = eval (mf mp ls) S.empty
   where --mp :: a -> State (S.Set a) Bool
-        mp a = State { runState = (rs a) }
+        mp a = State { runState = rs a }
         --rs :: a -> S.Set a -> (Bool, S.Set a)
         rs a s = (sf a s, S.insert a s)
 

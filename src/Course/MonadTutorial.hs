@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TupleSections #-}
 
 module Course.MonadTutorial where
 
@@ -74,26 +75,20 @@ The data structures given are:
 
 -}
 
-data Id a =
-  Id a
+newtype Id a = Id a
   deriving (Eq, Show)
 
-bindId ::
-  (a -> Id b)
-  -> Id a
-  -> Id b
-bindId f (Id a) =
-  f a
+bindId :: (a -> Id b)
+       -> Id a
+       -> Id b
+bindId f (Id a) = f a
 
-pureId ::
-  a
-  -> Id a
-pureId =
-  Id
+pureId :: a
+       -> Id a
+pureId = Id
 
-sequenceId ::
-  [Id a]
-  -> Id [a]
+sequenceId :: [Id a]
+           -> Id [a]
 sequenceId =
   foldr (\a as ->
     bindId (\a' ->
@@ -103,9 +98,8 @@ sequenceId =
 
 ----
 
-data Optional a =
-  Empty
-  | Full a
+data Optional a = Empty
+                | Full a
   deriving (Eq, Show)
 
 bindOptional ::
@@ -135,7 +129,7 @@ sequenceOptional =
 
 ----
 
-data IntReader a =
+newtype IntReader a =
   IntReader (Int -> a)
 
 bindIntReader ::
@@ -163,9 +157,9 @@ sequenceIntReader =
 
 ----
 
-data Reader r a =
+newtype Reader r a =
   Reader (r -> a)
-  
+
 bindReader ::
   (a -> Reader r b)
   -> Reader r a
@@ -191,15 +185,15 @@ sequenceReader =
 
 ----
 
-data IntState a =
+newtype IntState a =
   IntState (Int -> (a, Int))
-  
+
 bindIntState ::
   (a -> IntState b)
   -> IntState a
   -> IntState b
 bindIntState f (IntState g) =
-  IntState (\i -> 
+  IntState (\i ->
     let (a, j) = g i
         IntState h = f a
     in h j)
@@ -207,8 +201,8 @@ bindIntState f (IntState g) =
 pureIntState ::
   a
   -> IntState a
-pureIntState a =
-  IntState (\i -> (a, i))
+-- pureIntState a = IntState (\i -> (a, i))
+pureIntState a = IntState (a,)
 
 sequenceIntState ::
   [IntState a]
@@ -222,7 +216,7 @@ sequenceIntState =
 
 ----
 
-data State s a =
+newtype State s a =
   State (s -> (a, s))
 
 bindState ::
@@ -230,7 +224,7 @@ bindState ::
   -> State s a
   -> State s b
 bindState f (State g) =
-  State (\s -> 
+  State (\s ->
     let (a, t) = g s
         State h = f a
     in h t)
@@ -238,8 +232,8 @@ bindState f (State g) =
 pureState ::
   a
   -> State s a
-pureState a =
-  State (\s -> (a, s))
+-- pureState a = State (\s -> (a, s))
+pureState a = State (a,)
 
 sequenceState ::
   [State s a]
@@ -448,4 +442,4 @@ class BindAndPure f where
   pure ::
     a
     -> f a
-    
+

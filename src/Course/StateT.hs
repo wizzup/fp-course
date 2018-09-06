@@ -188,7 +188,7 @@ distinct' :: forall a. (Ord a, Num a)
 distinct' xs = eval' st S.empty
   where st :: State' (S.Set a) (List a)
         st = filtering fp xs
-        fp :: a -> State' (S.Set a) (Bool)
+        fp :: a -> State' (S.Set a) Bool
         fp a = state' (\s -> (S.notMember a s , S.insert a s))
 
   -- where rs s = state' (S.notMember s &&& S.insert s) x
@@ -218,7 +218,7 @@ distinctF xs = evalT st S.empty
                | otherwise = Full (S.notMember a s , S.insert a s)
 
 -- | An `OptionalT` is a functor of an `Optional` value.
-data OptionalT f a = OptionalT
+newtype OptionalT f a = OptionalT
   {
     runOptionalT :: f (Optional a)
   }
@@ -293,7 +293,7 @@ instance Monad f => Applicative (OptionalT f) where
           -- z (Full g) (Full h) = Full $ g h
 
           -- rot = (<*>) <$> ab <*> a
-          rot = lift2 (<*>) ab $ a
+          rot = lift2 (<*>) ab a
 
 -- | Implement the `Monad` instance for `OptionalT f` given a Monad f.
 --
@@ -341,7 +341,8 @@ instance Functor (Logger l) where
 instance Applicative (Logger l) where
   pure :: a
        -> Logger l a
-  pure a = Logger Nil a
+  -- pure a = Logger Nil a
+  pure = Logger Nil
 
   (<*>) :: Logger l (a -> b)
         -> Logger l a
@@ -353,7 +354,7 @@ instance Applicative (Logger l) where
 --
 -- >>> (\a -> Logger (listh [4,5]) (a+3)) =<< Logger (listh [1,2]) 3
 -- Logger [1,2,4,5] 6
--- 
+--
 instance Monad (Logger l) where
   (=<<) :: (a -> Logger l b)
         -> Logger l a
@@ -369,7 +370,11 @@ instance Monad (Logger l) where
 log1 :: l
      -> a
      -> Logger l a
-log1 l a = Logger (pure l) a
+-- log1 l a = Logger (pure l) a
+-- log1 l = Logger (pure l)
+-- log1 l = Logger $ pure l
+-- log1 l = (.) Logger pure l
+log1 = (.) Logger pure
 
 -- | Remove all duplicate integers from a list. Produce a log as you go.
 -- If there is an element above 100, then abort the entire computation and produce no result.
@@ -398,7 +403,7 @@ distinctG xs = runOptionalT $ evalT (filtering f xs) S.empty
                       | even a  = log1 evn $ check s
                       | otherwise = pure $ check s
                 check :: S.Set a -> Optional (Bool, S.Set a)
-                check s = (Full (S.notMember a s, S.insert a s))
+                check s = Full (S.notMember a s, S.insert a s)
                 abrt = "aborting > 100: " ++ fromString (show a)
                 evn = "even number: " ++ fromString (show a)
 

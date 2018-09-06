@@ -29,8 +29,8 @@ class Extend f => Comonad f where
 instance Comonad ExactlyOne where
   copure :: ExactlyOne a
          -> a
-  copure ea = runExactlyOne ea
-  -- copure (ExactlyOne a) = runExactlyOne ea
+  -- copure ea = runExactlyOne ea
+  copure = runExactlyOne
 
 -- | Witness that all things with (<<=) and copure also have (<$>).
 --

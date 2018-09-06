@@ -228,9 +228,8 @@ hasRight :: ListZipper a
          -> Bool
 hasRight = not . isEmpty . rights
 
-
--- | Seek to the left for a location matching a predicate, excluding the
--- focus.
+-- | Seek to the left for a location matching a predicate, starting from the
+-- current one.
 --
 -- /Tip:/ Use `break`
 --
