@@ -404,16 +404,26 @@ filtering pf (a :. as) = lift2 (++) this (filtering pf as)
 -----------------------
 
 instance Applicative IO where
-  pure =
-    P.return
-  f <*> a =
-    f P.>>= \f' -> P.fmap f' a
+  pure :: a -> IO a
+  pure = P.return
 
-return :: Applicative f => a -> f a
+  (<*>) :: IO (a -> b)
+        -> IO a
+        -> IO b
+  f <*> a = f P.>>= \f' -> P.fmap f' a
+
+return :: Applicative f 
+       => a
+       -> f a
 return = pure
 
-fail :: Applicative f => Chars -> f a
+fail :: Applicative f
+     => Chars
+     -> f a
 fail = error . hlist
 
-(>>) :: Applicative f => f a -> f b -> f b
+(>>) :: Applicative f
+     => f a
+     -> f b
+     -> f b
 (>>) = (*>)

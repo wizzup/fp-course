@@ -5,6 +5,7 @@ let
   drvWithTools = pkgs.haskell.lib.addBuildDepends drv (with pkgs;
   [ cabal-install
     hlint
+    ghcid
     haskellPackages.brittany
   ]);
 in
