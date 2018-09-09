@@ -28,45 +28,34 @@ import Course.Optional
 -- * \'  Apostrophe or single quote (only valid in single quoted json strings)
 -- * \"  Double quote (only valid in double quoted json strings)
 -- * \\  Backslash character
-data SpecialCharacter =
-  BackSpace
-  | FormFeed
-  | NewLine
-  | CarriageReturn
-  | Tab
-  | VerticalTab
-  | SingleQuote
-  | DoubleQuote
-  | Backslash
+--
+data SpecialCharacter = BackSpace
+                      | FormFeed
+                      | NewLine
+                      | CarriageReturn
+                      | Tab
+                      | VerticalTab
+                      | SingleQuote
+                      | DoubleQuote
+                      | Backslash
   deriving (Eq, Ord, Show)
 
 -- NOTE: This is not inverse to @toSpecialCharacter@.
-fromSpecialCharacter ::
-  SpecialCharacter
-  -> Char
-fromSpecialCharacter BackSpace =
-  chr 0x08
-fromSpecialCharacter FormFeed =
-  chr 0x0C
-fromSpecialCharacter NewLine =
-  '\n'
-fromSpecialCharacter CarriageReturn =
-  '\r'
-fromSpecialCharacter Tab =
-  '\t'
-fromSpecialCharacter VerticalTab =
-  '\v'
-fromSpecialCharacter SingleQuote =
-  '\''
-fromSpecialCharacter DoubleQuote =
-  '"'
-fromSpecialCharacter Backslash =
-  '\\'
+fromSpecialCharacter :: SpecialCharacter
+                     -> Char
+fromSpecialCharacter BackSpace      = chr 0x08
+fromSpecialCharacter FormFeed       = chr 0x0C
+fromSpecialCharacter NewLine        = '\n'
+fromSpecialCharacter CarriageReturn = '\r'
+fromSpecialCharacter Tab            = '\t'
+fromSpecialCharacter VerticalTab    = '\v'
+fromSpecialCharacter SingleQuote    = '\''
+fromSpecialCharacter DoubleQuote    = '"'
+fromSpecialCharacter Backslash      = '\\'
 
 -- NOTE: This is not inverse to @fromSpecialCharacter@.
-toSpecialCharacter ::
-  Char
-  -> Optional SpecialCharacter
+toSpecialCharacter :: Char
+                   -> Optional SpecialCharacter
 toSpecialCharacter c =
   let table = ('b', BackSpace) :.
               ('f', FormFeed) :.
@@ -79,7 +68,7 @@ toSpecialCharacter c =
               ('\\', Backslash) :.
               Nil
   in snd <$> find ((==) c . fst) table
-  
+
 -- | Parse a JSON string. Handle double-quotes, special characters, hexadecimal characters. See http://json.org for the full list of control characters in JSON.
 --
 -- /Tip:/ Use `hex`, `fromSpecialCharacter`, `between`, `is`, `charTok`, `toSpecialCharacter`.
@@ -107,10 +96,20 @@ toSpecialCharacter c =
 --
 -- >>> isErrorResult (parse jsonString "\"\\abc\"def")
 -- True
-jsonString ::
-  Parser Chars
-jsonString =
-  error "todo: Course.JsonParser#jsonString"
+--
+jsonString :: Parser Chars
+jsonString = between (is $ fromSpecialCharacter DoubleQuote)
+                     (is $ fromSpecialCharacter DoubleQuote)
+                     (list $ space ||| alpha ||| digit ||| special )
+  where special :: Parser Char
+        special = do
+          is (fromSpecialCharacter Backslash)
+          c <- character
+          -- case (c, toSpecialCharacter c) of
+          case (id &&& toSpecialCharacter) c of
+            ('u', _     ) -> hex
+            (_,   Empty ) -> unexpectedCharParser c
+            (_,   Full s) -> pure $ fromSpecialCharacter s
 
 -- | Parse a JSON rational.
 --
@@ -136,10 +135,13 @@ jsonString =
 --
 -- >>> isErrorResult (parse jsonNumber "abc")
 -- True
-jsonNumber ::
-  Parser Rational
-jsonNumber =
-  error "todo: Course.JsonParser#jsonNumber"
+--
+jsonNumber :: Parser Rational
+jsonNumber = list (is '-' ||| is '.' ||| digit) >>= pf
+  where pf :: Chars -> Parser Rational
+        pf i = case readFloat i of
+                 Empty  -> unexpectedStringParser i
+                 Full f -> pure f
 
 -- | Parse a JSON true literal.
 --
@@ -150,10 +152,9 @@ jsonNumber =
 --
 -- >>> isErrorResult (parse jsonTrue "TRUE")
 -- True
-jsonTrue ::
-  Parser Chars
-jsonTrue =
-  error "todo: Course.JsonParser#jsonTrue"
+--
+jsonTrue :: Parser Chars
+jsonTrue = stringTok "true"
 
 -- | Parse a JSON false literal.
 --
@@ -164,10 +165,9 @@ jsonTrue =
 --
 -- >>> isErrorResult (parse jsonFalse "FALSE")
 -- True
-jsonFalse ::
-  Parser Chars
-jsonFalse =
-  error "todo: Course.JsonParser#jsonFalse"
+--
+jsonFalse :: Parser Chars
+jsonFalse = stringTok "false"
 
 -- | Parse a JSON null literal.
 --
@@ -178,10 +178,9 @@ jsonFalse =
 --
 -- >>> isErrorResult (parse jsonNull "NULL")
 -- True
-jsonNull ::
-  Parser Chars
-jsonNull =
-  error "todo: Course.JsonParser#jsonNull"
+--
+jsonNull :: Parser Chars
+jsonNull = stringTok "null"
 
 -- | Parse a JSON array.
 --
@@ -201,10 +200,9 @@ jsonNull =
 --
 -- >>> parse jsonArray "[true, \"abc\", [false]]"
 -- Result >< [JsonTrue,JsonString "abc",JsonArray [JsonFalse]]
-jsonArray ::
-  Parser (List JsonValue)
-jsonArray =
-  error "todo: Course.JsonParser#jsonArray"
+--
+jsonArray :: Parser (List JsonValue)
+jsonArray = betweenSepbyComma '[' ']' jsonValue
 
 -- | Parse a JSON object.
 --
@@ -221,10 +219,16 @@ jsonArray =
 --
 -- >>> parse jsonObject "{ \"key1\" : true , \"key2\" : false } xyz"
 -- Result >xyz< [("key1",JsonTrue),("key2",JsonFalse)]
-jsonObject ::
-  Parser Assoc
-jsonObject =
-  error "todo: Course.JsonParser#jsonObject"
+--
+jsonObject :: Parser Assoc
+jsonObject = betweenSepbyComma '{' '}' po <* spaces
+  where po :: Parser (Chars, JsonValue)
+        po = do
+          spaces
+          c <- tok jsonString
+          charTok ':'
+          v <- tok jsonValue
+          pure (c, v)
 
 -- | Parse a JSON value.
 --
@@ -238,10 +242,15 @@ jsonObject =
 --
 -- >>> parse jsonObject "{ \"key1\" : true , \"key2\" : [7, false] , \"key3\" : { \"key4\" : null } }"
 -- Result >< [("key1",JsonTrue),("key2",JsonArray [JsonRational (7 % 1),JsonFalse]),("key3",JsonObject [("key4",JsonNull)])]
-jsonValue ::
-  Parser JsonValue
-jsonValue =
-   error "todo: Course.JsonParser#jsonValue"
+--
+jsonValue :: Parser JsonValue
+jsonValue =   (JsonString   <$> jsonString)
+          ||| (JsonRational <$> jsonNumber)
+          ||| (JsonObject   <$> jsonObject)
+          ||| (JsonArray    <$> jsonArray)
+          ||| (JsonNull  <$ jsonNull)
+          ||| (JsonTrue  <$ jsonTrue)
+          ||| (JsonFalse <$ jsonFalse)
 
 -- | Read a file into a JSON value.
 --
