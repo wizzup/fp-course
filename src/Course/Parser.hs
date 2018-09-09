@@ -87,6 +87,10 @@ unexpectedCharParser :: Char
 -- unexpectedCharParser c = (constantParser . UnexpectedChar) c
 unexpectedCharParser = constantParser . UnexpectedChar
 
+unexpectedStringParser :: Chars
+                       -> Parser a
+unexpectedStringParser = constantParser . UnexpectedString
+
 --- | Return a parser that always returns the given parse result.
 ---
 --- >>> isErrorResult (parse (constantParser UnexpectedEof) "abc")
@@ -527,7 +531,7 @@ ageParser :: Parser Int
 -- but my version is more readable ;)
 ageParser = list1 digit >>= f
   where f k = case read k of
-                Empty  -> constantParser $ UnexpectedString k
+                Empty  -> unexpectedStringParser k
                 Full h -> pure h
 
 -- | Write a parser for Person.firstName.
