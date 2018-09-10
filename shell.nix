@@ -7,6 +7,7 @@ let
     hlint
     ghcid
     haskellPackages.brittany
+    hie84
   ]);
 in
   if pkgs.lib.inNixShell then drvWithTools.env else drvWithTools
