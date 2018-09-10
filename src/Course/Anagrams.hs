@@ -12,11 +12,11 @@ import Course.Functor
 
 Functions you will need
 --
-* fmap :: (a -> b) -> IO a -> IO b
-* readFile :: FilePath -> IO Str
-* lines :: Str -> [Str]
-* permutations :: [a] -> [[a]]
-* intersectBy :: (a -> a -> Bool) -> [a] -> [a] -> [a]
+* (<$>) :: (a -> b) -> IO a -> IO b
+* readFile :: FilePath -> IO Chars
+* lines :: Chars -> List Chars
+* permutations :: List a -> List (List a)
+* intersectBy :: (a -> b -> Bool) -> List a -> List b -> List a
 * toLower :: Char -> Char
 
 Functions that might help
