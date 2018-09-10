@@ -1,6 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RebindableSyntax #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Course.Interactive where
 
@@ -13,57 +15,94 @@ import Course.List
 import Course.Optional
 
 -- | Eliminates any value over which a functor is defined.
-vooid ::
-  Functor m =>
-  m a
-  -> m ()
-vooid =
-  (<$>) (const ())
+--
+-- >>> vooid Empty
+-- Empty
+--
+-- >>> vooid (Full 10)
+-- Full ()
+--
+vooid :: Functor m
+       => m a
+       -> m ()
+vooid = (<$>) (const ())
 
 -- | A version of @bind@ that ignores the result of the effect.
-(>-) ::
-  Monad m =>
-  m a
-  -> m b
-  -> m b
-(>-) a =
-  (>>=) a . const
+--
+-- >>> Empty >- Full 1
+-- Empty
+--
+-- >>> Full 1 >- (Full 'a')
+-- Full 'a'
+--
+-- >>> pure False >- pure True
+-- True
+--
+(>-) :: Monad m
+     => m a
+     -> m b
+     -> m b
+-- (>-) a = (>>=) a . const
+-- a >- b = ((>>=) a . const) $ b
+-- a >- b = (>>=) a . const $ b
+-- a >- b = (>>=) a (const b)
+a >- b = a >>= const b
 
 -- | Runs an action until a result of that action satisfies a given predicate.
-untilM ::
-  Monad m =>
-  (a -> m Bool) -- ^ The predicate to satisfy to stop running the action.
-  -> m a -- ^ The action to run until the predicate satisfies.
-  -> m a
-untilM p a =
-  a >>= \r ->
-  p r >>= \q ->
+--
+-- >>> untilM (Full <$> const False) Empty
+-- Empty
+--
+-- >>> untilM (Full <$> even) (Full 2)
+-- Full 2
+--
+untilM :: forall a m. Monad m
+       => (a -> m Bool) -- ^ The predicate to satisfy to stop running the action.
+       -> m a           -- ^ The action to run until the predicate satisfies.
+       -> m a
+-- untilM p a =
+--   a >>= \r ->
+--   p r >>= \q ->
+--   if q
+--     then
+--       pure r
+--     else
+--       untilM p a
+
+untilM p a = do
+  r <- a
+  q <- p r
   if q
-    then
-      pure r
-    else
-      untilM p a
+  then pure r
+  else untilM p a
 
 -- | Example program that uses IO to echo back characters that are entered by the user.
-echo ::
-  IO ()
-echo =
-  vooid (untilM
-          (\c ->
-            if c == 'q'
-              then
-                putStrLn "Bye!" >-
-                pure True
-              else
-                pure False)
-          (putStr "Enter a character: " >-
-           getChar >>= \c ->
-           putStrLn "" >-
-           putStrLn (c :. Nil) >-
-           pure c))
+echo :: IO ()
+-- echo =
+--   vooid (untilM
+--           (\c ->
+--             if c == 'q'
+--               then
+--                 putStrLn "Bye!" >-
+--                 pure True
+--               else
+--                 pure False)
+--           (putStr "Enter a character ('q' to exit): " >-
+--            getChar >>= \c ->
+--            putStrLn "" >-
+--            putStrLn (c :. Nil) >-
+--            pure c))
 
-data Op =
-  Op Char Chars (IO ()) -- keyboard entry, description, program
+echo = vooid (untilM p g)
+  where p 'q' = putStrLn "Bye!" >- pure True
+        p _   = pure False
+        g = do
+          putStr "Enter a character ('q' to exit): "
+          c <- getChar
+          putStrLn ""
+          putStrLn (c:.Nil)
+          pure c
+
 
 -- |
 --
@@ -80,10 +119,17 @@ data Op =
 -- /Tip:/ @putStr :: String -> IO ()@ -- Prints a string to standard output.
 --
 -- /Tip:/ @putStrLn :: String -> IO ()@ -- Prints a string and then a new line to standard output.
-convertInteractive ::
-  IO ()
-convertInteractive =
-  error "todo: Course.Interactive#convertInteractive"
+--
+convertInteractive :: IO ()
+-- convertInteractive =
+--   putStr "Enter a string: "  >-
+--   getLine >>= (\ls ->
+--   putStrLn $ "Upper case is :" ++ map toUpper ls)
+
+convertInteractive = do
+  putStr "Enter a string: "
+  ls <- getLine
+  putStrLn $ "Upper case is :" ++ map toUpper ls
 
 -- |
 --
@@ -108,10 +154,23 @@ convertInteractive =
 -- /Tip:/ @putStr :: String -> IO ()@ -- Prints a string to standard output.
 --
 -- /Tip:/ @putStrLn :: String -> IO ()@ -- Prints a string and then a new line to standard output.
-reverseInteractive ::
-  IO ()
-reverseInteractive =
-  error "todo: Course.Interactive#reverseInteractive"
+--
+reverseInteractive :: IO ()
+-- reverseInteractive =
+--   putStr "Enter input file path: " >-
+--   getLine >>= \src ->
+--   putStr "Enter output file path: " >-
+--   getLine >>= \dst ->
+--   readFile src >>= \ls ->
+--   writeFile dst $ reverse ls
+
+reverseInteractive = do
+  putStr "Enter input file path: "
+  src <- getLine
+  putStr "Enter output file path: "
+  dst <- getLine
+  ls <- readFile src
+  writeFile dst $ reverse ls
 
 -- |
 --
@@ -134,10 +193,51 @@ reverseInteractive =
 -- /Tip:/ @putStr :: String -> IO ()@ -- Prints a string to standard output.
 --
 -- /Tip:/ @putStrLn :: String -> IO ()@ -- Prints a string and then a new line to standard output.
-encodeInteractive ::
-  IO ()
-encodeInteractive =
-  error "todo: Course.Interactive#encodeInteractive"
+--
+
+-- | String encode function
+--
+-- >>> encode Nil
+-- ""
+--
+-- >>> encode $ listh "a b c"
+-- "a%20b%20c"
+--
+-- >>> encode $ listh "\"abc\""
+-- "%22abc%22"
+--
+encode :: Chars -> Chars
+-- encode = foldRight e Nil
+--   where e ' ' cs  = listh "%20" ++ cs
+--         e '\t' cs = listh "%09" ++ cs
+--         e '"' cs  = listh "%22" ++ cs
+--         e c cs   = c :. cs
+
+-- (=<<) for List is flatMap :: (a -> List b) -> List a -> List b
+--
+-- λ> flatMap (\x -> (x:.x:.Nil) :. Nil) $ listh "abc"
+-- ["aa","bb","cc"]
+--
+-- encode cs = e =<< cs
+-- encode cs = (e =<<) cs
+encode = (e =<<)
+--
+-- encode cs = cs >>= e
+-- encode cs = (>>=) cs e
+--
+-- encode cs = join $ e <$> cs
+  where e ' '  = "%20"
+        e '\t' = "%09"
+        e '"'  = "%22"
+        e c = c :. Nil
+
+encodeInteractive :: IO ()
+encodeInteractive = do
+  putStr "Enter URL: "
+  ls <- getLine
+  putStrLn $ encode ls
+
+data Op = Op Char Chars (IO ()) -- keyboard entry, description, program
 
 interactive ::
   IO ()
