@@ -25,20 +25,32 @@ Functions that might help
 
 -}
 
+-- | Return all anagrams of the given string that appear in the given
+-- dictionary file.
+--
+-- >>> anagrams (listh "apple") (listh "./share/dicts.txt")
+-- ["apple","apple","pepla","pepla","appel","appel"]
+--
+anagrams :: Chars            -- ^ A word to find anagrams of
+         -> FilePath         -- ^ Path to dictionary file
+         -> IO (List Chars)  -- ^ List of anagrams of a given words
+anagrams ws pth = anagrams' ws . lines <$> readFile pth
+  where anagrams' :: Chars -> List Chars -> List Chars
+        anagrams' Nil _  = Nil
+        anagrams' cs  ds = intersectBy equalIgnoringCase (permutations cs) ds
 
--- Return all anagrams of the given string
--- that appear in the given dictionary file.
-anagrams ::
-  Chars
-  -> FilePath
-  -> IO (List Chars)
-anagrams =
-  error "todo: Course.Anagrams#anagrams"
-
--- Compare two strings for equality, ignoring case
-equalIgnoringCase ::
-  Chars
-  -> Chars
-  -> Bool
-equalIgnoringCase =
-  error "todo: Course.Anagrams#equalIgnoringCase"
+-- | Compare two strings for equality, ignoring case
+--
+-- >>> equalIgnoringCase (listh "apple") (listh "APPle")
+-- True
+--
+-- >>> equalIgnoringCase (listh "apple") (listh "banana")
+-- False
+--
+equalIgnoringCase :: Chars
+                  -> Chars
+                  -> Bool
+-- equalIgnoringCase as bs = (map toLower as) == (map toLower bs)
+-- equalIgnoringCase as bs = (==) (map toLower as) (map toLower bs)
+-- equalIgnoringCase as bs = ((==) `on` (map toLower)) as bs
+equalIgnoringCase = (==) `on` map toLower
