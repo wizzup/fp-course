@@ -1,6 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Course.Anagrams where
 
@@ -28,6 +27,7 @@ Functions that might help
 -- | Return all anagrams of the given string that appear in the given
 -- dictionary file.
 --
+-- NOTE: list permutations contains duplicated
 -- >>> anagrams (listh "apple") (listh "./share/dicts.txt")
 -- ["apple","apple","pepla","pepla","appel","appel"]
 --
