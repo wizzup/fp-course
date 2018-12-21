@@ -259,10 +259,10 @@ instance Functor f => Functor (OptionalT f) where
 -- [Empty,Empty]
 --
 -- >>> runOptionalT $ OptionalT (Empty :. Nil) <*> OptionalT (Full 1 :. Full 2 :. Nil)
--- [Empty,Empty]
+-- [Empty]
 --
 -- >>> runOptionalT $ OptionalT (Full (+1) :. Empty :. Nil) <*> OptionalT (Full 1 :. Full 2 :. Nil)
--- [Full 2,Full 3,Empty,Empty]
+-- [Full 2,Full 3,Empty]
 --
 -- >>> runOptionalT $ OptionalT (Full (+1) :. Full (+2) :. Nil) <*> OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Empty,Full 3,Empty]
