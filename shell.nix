@@ -3,7 +3,10 @@
 }:
 let
   inherit (nixpkgs) pkgs;
+  drv = import ./default.nix { inherit nixpkgs compiler; };
+  drvWithTools = pkgs.haskell.lib.addBuildDepends drv [
+    pkgs.haskellPackages.doctest
+    pkgs.haskellPackages.ghcid
+  ];
 in
-pkgs.mkShell {
-  buildInputs = with pkgs.haskellPackages; [ ghc ghcid ];
-}
+ drvWithTools
