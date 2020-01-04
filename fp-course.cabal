@@ -20,7 +20,12 @@ homepage:             https://github.com/data61/fp-course
 bug-reports:          https://github.com/data61/fp-course/issues
 cabal-version:        >= 1.10
 build-type:           Simple
-tested-with:          GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.4
+tested-with:          GHC == 7.10.3
+                    , GHC == 8.0.2
+                    , GHC == 8.2.2
+                    , GHC == 8.4.4
+                    , GHC == 8.6.4
+                    , GHC == 8.6.5
 extra-source-files:   etc/CONTRIBUTORS,
                       changelog
 
@@ -34,6 +39,7 @@ library
   build-depends:      base < 5 && >= 4
                       , containers >= 0.4
                       , array >= 0.4
+                      , QuickCheck >= 2.13
 
   ghc-options:        -Wall
                       -fwarn-incomplete-uni-patterns
